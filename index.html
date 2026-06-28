@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Homy</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #000000;
+    --surface: #000000;
+    --border: #1e1e1e;
+    --border-bright: #2e2e2e;
+    --text: #e0e0e0;
+    --text-dim: #555;
+    --text-muted: #333;
+    --green: #4cff72;
+    --red: #ff3a3a;
+    --yellow: #ffcc00;
+    --font: 'JetBrains Mono', 'Fira Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #status-banner {
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  #status-dot {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+  }
+
+  #status-dot circle {
+    transition: fill 0.4s ease, stroke 0.4s ease;
+  }
+
+  #status-text-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  #status-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    transition: color 0.4s ease;
+  }
+
+  #status-desc {
+    font-size: 10px;
+    letter-spacing: 0.03em;
+    color: var(--text-dim);
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #status-banner.all-up #status-label { color: var(--green); }
+  #status-banner.some-down #status-label { color: var(--yellow); }
+  #status-banner.many-down #status-label { color: var(--red); }
+
+  #edit-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 6px;
+    margin-left: auto;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    line-height: 0;
+  }
+  #edit-btn:hover { color: var(--text); background: var(--border); }
+  #edit-btn.active { color: var(--text); background: var(--border); }
+
+  /* ─── MAIN ─── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    overflow: hidden;
+  }
+
+  #empty-state {
+    text-align: center;
+    margin: auto;
+  }
+
+  #empty-state h1 {
+    font-size: 22px;
+    font-weight: 400;
+    letter-spacing: 0.06em;
+    color: var(--text);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  #empty-state p {
+    color: var(--text-dim);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+
+  #empty-state .hint {
+    margin-top: 24px;
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  /* ─── SERVICES GRID ─── */
+  #services-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    width: 100%;
+    max-width: 1200px;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  #services-container::-webkit-scrollbar { width: 4px; }
+  #services-container::-webkit-scrollbar-track { background: transparent; }
+  #services-container::-webkit-scrollbar-thumb { background: var(--border-bright); }
+
+  #services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, 240px);
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .service-item {
+    border: 1px solid var(--border);
+    padding: 16px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .service-item:hover { border-color: var(--border-bright); }
+
+  .service-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .service-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    filter: invert(1) grayscale(1);
+    opacity: 0.7;
+  }
+
+  .service-name {
+    font-size: 12px;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .service-delete {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0 2px;
+    font-family: var(--font);
+    transition: color 0.15s;
+    margin-left: auto;
+  }
+  .service-delete:hover { color: var(--red); }
+
+  .service-item.dragging { opacity: 0.4; }
+  .service-item.drag-over { border-color: var(--text); }
+
+  .service-item.drag-handle {
+    cursor: grab;
+  }
+  .reordering .service-item { cursor: grab; }
+  .reordering .service-item:active { cursor: grabbing; }
+
+  .ping-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 24px;
+  }
+
+  .ping-bar {
+    flex: 1;
+    max-width: 18px;
+    border-radius: 0;
+    transition: opacity 0.2s;
+  }
+  .ping-bar.ok { background: var(--green); opacity: 0.85; }
+  .ping-bar.down { background: var(--red); opacity: 0.85; }
+  .ping-bar.empty { background: var(--border-bright); height: 40%; }
+
+  /* ─── ADD BUTTON ─── */
+  #add-btn-wrap {
+    padding: 16px 20px 0;
+    flex-shrink: 0;
+  }
+
+  #add-btn {
+    background: none;
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 8px 20px;
+    font-family: var(--font);
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  #add-btn:hover { border-color: var(--text); }
+
+  /* ─── MODAL ─── */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+
+  #modal {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    width: 420px;
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #modal-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 18px;
+    font-family: var(--font);
+    line-height: 1;
+    padding: 0;
+    transition: color 0.15s;
+  }
+  #modal-close:hover { color: var(--text); }
+
+  #modal-body { padding: 20px; overflow-y: auto; }
+
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: block;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    background: #000;
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .field input:focus { border-color: var(--text-dim); }
+
+  #icon-search-wrap { position: relative; }
+  #icon-search {
+    width: 100%;
+    background: #000;
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: var(--font);
+    font-size: 13px;
+    outline: none;
+    margin-bottom: 8px;
+  }
+  #icon-search:focus { border-color: var(--text-dim); }
+
+  #icon-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 4px;
+    border: 1px solid var(--border);
+    background: #000;
+  }
+  #icon-grid::-webkit-scrollbar { width: 4px; }
+  #icon-grid::-webkit-scrollbar-thumb { background: var(--border-bright); }
+
+  .icon-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: border-color 0.1s;
+  }
+  .icon-option:hover { border-color: var(--border-bright); }
+  .icon-option.selected { border-color: var(--text); }
+  .icon-option img {
+    width: 24px;
+    height: 24px;
+    filter: invert(1) grayscale(1);
+    opacity: 0.7;
+  }
+  .icon-option span {
+    font-size: 8px;
+    color: var(--text-dim);
+    text-align: center;
+    word-break: break-all;
+    line-height: 1.2;
+    max-width: 50px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  #icon-loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-dim);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+  }
+
+  #modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .btn {
+    background: none;
+    border: 1px solid var(--border-bright);
+    color: var(--text);
+    padding: 7px 16px;
+    font-family: var(--font);
+    font-size: 12px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: border-color 0.15s;
+  }
+  .btn:hover { border-color: var(--text); }
+  .btn-primary {
+    border-color: var(--text-dim);
+  }
+  .btn-primary:hover { border-color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- STATUS BANNER -->
+<div id="status-banner" class="all-up">
+  <svg id="status-dot" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
+    <circle id="dot-glow" cx="18" cy="18" r="16" fill="#4cff7222" stroke="#4cff72" stroke-width="1.5"/>
+    <circle id="dot-core" cx="18" cy="18" r="8" fill="#4cff72"/>
+  </svg>
+  <div id="status-text-wrap">
+    <div id="status-label">Opérationnel</div>
+    <div id="status-desc">Tous les services sont en ligne</div>
+  </div>
+  <button id="edit-btn" onclick="toggleEdit()" title="Réorganiser">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+      <path d="m15 5 4 4"/>
+    </svg>
+  </button>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+  <div id="empty-state">
+    <h1>Select Your Services</h1>
+    <p>Monitore tes services self-hosted en temps réel.</p>
+    <div class="hint">Clique sur "+ Add a service" ci-dessous pour commencer</div>
+  </div>
+  <div id="services-container">
+    <div id="services-grid"></div>
+  </div>
+  <div id="add-btn-wrap">
+    <button id="add-btn" onclick="openModal()">+ Add a service</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <div id="modal-header">
+      <span id="modal-title">Ajouter un service</span>
+      <button id="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div id="modal-body">
+      <div class="field">
+        <label>Nom</label>
+        <input type="text" id="svc-name" placeholder="ex: Pi-hole">
+      </div>
+      <div class="field">
+        <label>URL</label>
+        <input type="text" id="svc-url" placeholder="ex: http://192.168.1.1">
+      </div>
+      <div class="field">
+        <label>Icône</label>
+        <input type="text" id="icon-search" placeholder="Rechercher une icône..." oninput="filterIcons(this.value)">
+        <div id="icon-grid"><div id="icon-loading">Chargement des icônes...</div></div>
+      </div>
+    </div>
+    <div id="modal-footer">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" id="modal-submit" onclick="addService()">Ajouter</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let services = [];
+  let pingHistory = {};
+  let allIcons = [];
+  let selectedIcon = '';
+  let isEditing = false;
+  let dragSrcId = null;
+  let editingId = null;
+  let didDrag = false;
+
+  // ─── INIT ───
+  async function init() {
+    await fetchServices();
+    await fetchPingHistory();
+    render();
+    setInterval(async () => {
+      await fetchPingHistory();
+      render();
+    }, 15000);
+  }
+
+  async function fetchServices() {
+    const r = await fetch('/api/services');
+    services = await r.json();
+  }
+
+  async function fetchPingHistory() {
+    const r = await fetch('/api/ping-history');
+    pingHistory = await r.json();
+  }
+
+  // ─── RENDER ───
+  function render() {
+    const grid = document.getElementById('services-grid');
+    grid.innerHTML = '';
+
+    let downCount = 0;
+    for (const svc of services) {
+      const hist = pingHistory[svc.id] || [];
+      const lastEntry = hist[hist.length - 1];
+      if (lastEntry && !lastEntry.ok) downCount++;
+    }
+
+    // Status banner
+    const banner = document.getElementById('status-banner');
+    const label = document.getElementById('status-label');
+    const desc = document.getElementById('status-desc');
+    const dotGlow = document.getElementById('dot-glow');
+    const dotCore = document.getElementById('dot-core');
+
+    const total = services.length;
+
+    if (downCount === 0) {
+      banner.className = 'all-up';
+      label.textContent = 'Opérationnel';
+      desc.textContent = total === 0 ? 'Aucun service configuré' : `${total} service${total > 1 ? 's' : ''} en ligne`;
+      dotGlow.setAttribute('fill', '#4cff7222');
+      dotGlow.setAttribute('stroke', '#4cff72');
+      dotCore.setAttribute('fill', '#4cff72');
+    } else if (downCount <= 3) {
+      banner.className = 'some-down';
+      label.textContent = 'Dégradé';
+      desc.textContent = `${downCount} service${downCount > 1 ? 's' : ''} hors ligne sur ${total}`;
+      dotGlow.setAttribute('fill', '#ffcc0022');
+      dotGlow.setAttribute('stroke', '#ffcc00');
+      dotCore.setAttribute('fill', '#ffcc00');
+    } else {
+      banner.className = 'many-down';
+      label.textContent = 'Incident majeur';
+      desc.textContent = `${downCount} services hors ligne sur ${total}`;
+      dotGlow.setAttribute('fill', '#ff3a3a22');
+      dotGlow.setAttribute('stroke', '#ff3a3a');
+      dotCore.setAttribute('fill', '#ff3a3a');
+    }
+
+    for (const svc of services) {
+      const hist = pingHistory[svc.id] || [];
+      const item = document.createElement('div');
+      item.className = 'service-item';
+      if (!isEditing) {
+        item.onclick = (e) => { if (!e.target.closest('.service-delete')) window.open(svc.url, '_blank'); };
+      } else {
+        item.onclick = (e) => { if (!e.target.closest('.service-delete')) openModal(svc); };
+      }
+
+      const iconUrl = getIconUrl(svc.icon);
+
+      const MIN_H = 15;
+      const MAX_H = 100;
+
+      const validMs = hist.filter(e => e.ok && e.ms !== null).map(e => e.ms);
+      const minMs = validMs.length ? Math.min(...validMs) : 0;
+      const maxMs = validMs.length ? Math.max(...validMs) : 1;
+      const range = maxMs - minMs || 1;
+
+      const bars = [];
+      for (let i = 0; i < 10; i++) {
+        const dataIdx = i - (10 - hist.length);
+        if (dataIdx < 0 || !hist[dataIdx]) {
+          bars.push('<div class="ping-bar empty"></div>');
+        } else {
+          const entry = hist[dataIdx];
+          if (!entry.ok) {
+            bars.push('<div class="ping-bar down" style="height:100%" title="Hors ligne"></div>');
+          } else {
+            const ms = entry.ms || 0;
+            const ratio = (ms - minMs) / range;
+            const h = Math.round(MAX_H - ratio * (MAX_H - MIN_H));
+            bars.push(`<div class="ping-bar ok" style="height:${h}%" title="${ms}ms"></div>`);
+          }
+        }
+      }
+
+      item.innerHTML = `
+        <div class="service-top">
+          ${iconUrl ? `<img class="service-icon" src="${iconUrl}" alt="">` : '<div style="width:20px"></div>'}
+          <span class="service-name" title="${svc.url}">${svc.name}</span>
+          <button class="service-delete" onclick="event.stopPropagation(); deleteService('${svc.id}')">×</button>
+        </div>
+        <div class="ping-bars">${bars.join('')}</div>
+      `;
+      if (isEditing) {
+        item.draggable = true;
+        item.classList.add('drag-handle');
+        item.dataset.id = svc.id;
+        item.addEventListener('dragstart', onDragStart);
+        item.addEventListener('dragover', onDragOver);
+        item.addEventListener('drop', onDrop);
+        item.addEventListener('dragend', onDragEnd);
+        item.addEventListener('dragenter', onDragEnter);
+        item.addEventListener('dragleave', onDragLeave);
+      }
+      grid.appendChild(item);
+    }
+
+    // Show/hide empty state and container
+    const hasServices = services.length > 0;
+    document.getElementById('empty-state').style.display = hasServices ? 'none' : 'block';
+    document.getElementById('services-container').style.display = hasServices ? 'flex' : 'none';
+  }
+
+  // ─── REORDER (drag & drop) ───
+  function toggleEdit() {
+    isEditing = !isEditing;
+    document.getElementById('edit-btn').classList.toggle('active', isEditing);
+    document.getElementById('services-container').classList.toggle('reordering', isEditing);
+    render();
+  }
+
+  function onDragStart(e) {
+    dragSrcId = e.target.closest('.service-item').dataset.id;
+    e.target.closest('.service-item').classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+  }
+
+  function onDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
+
+  function onDragEnter(e) {
+    const el = e.target.closest('.service-item');
+    if (el && el.dataset.id !== dragSrcId) el.classList.add('drag-over');
+  }
+
+  function onDragLeave(e) {
+    const el = e.target.closest('.service-item');
+    if (el) el.classList.remove('drag-over');
+  }
+
+  function onDrop(e) {
+    e.preventDefault();
+    const target = e.target.closest('.service-item');
+    if (!target || target.dataset.id === dragSrcId) return;
+    target.classList.remove('drag-over');
+    const fromIdx = services.findIndex(s => s.id === dragSrcId);
+    const toIdx = services.findIndex(s => s.id === target.dataset.id);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [moved] = services.splice(fromIdx, 1);
+    services.splice(toIdx, 0, moved);
+    saveReorder();
+    render();
+  }
+
+  function onDragEnd(e) {
+    e.target.closest('.service-item').classList.remove('dragging');
+    document.querySelectorAll('.service-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+    dragSrcId = null;
+  }
+
+  async function saveReorder() {
+    const ids = services.map(s => s.id);
+    const r = await fetch('/api/services/reorder', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    if (!r.ok) console.error('Reorder failed');
+  }
+
+  // ─── DELETE ───
+  async function deleteService(id) {
+    await fetch(`/api/services/${id}`, { method: 'DELETE' });
+    await fetchServices();
+    await fetchPingHistory();
+    render();
+  }
+
+  // ─── MODAL ───
+  function openModal(svc) {
+    editingId = svc ? svc.id : null;
+    document.getElementById('modal-title').textContent = svc ? 'Modifier le service' : 'Ajouter un service';
+    document.getElementById('modal-submit').textContent = svc ? 'Enregistrer' : 'Ajouter';
+    document.getElementById('svc-name').value = svc ? svc.name : '';
+    document.getElementById('svc-url').value = svc ? svc.url : '';
+    document.getElementById('icon-search').value = '';
+    selectedIcon = svc ? svc.icon : '';
+    document.getElementById('modal-overlay').classList.add('open');
+    loadIcons();
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    editingId = null;
+  }
+
+  document.getElementById('modal-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+
+  // ─── ICONS ───
+  function getIconUrl(ref) {
+    if (!ref) return '';
+    if (ref.startsWith('simple:')) {
+      const slug = ref.slice(7);
+      return `https://cdn.jsdelivr.net/npm/simple-icons/icons/${slug}.svg`;
+    }
+    if (ref.startsWith('selfhst:')) {
+      const slug = ref.slice(8);
+      return `https://raw.githubusercontent.com/selfhst/icons/main/svg/${slug}.svg`;
+    }
+    return `https://raw.githubusercontent.com/selfhst/icons/main/svg/${ref}.svg`;
+  }
+
+  async function loadIcons() {
+    if (allIcons.length > 0) { renderIcons(allIcons); return; }
+    document.getElementById('icon-grid').innerHTML = '<div id="icon-loading">Chargement...</div>';
+    const results = [];
+    try {
+      const r = await fetch('https://cdn.jsdelivr.net/gh/selfhst/icons@main/metadata/icons.json');
+      const data = await r.json();
+      for (const i of data) {
+        results.push({ reference: i.reference || i, name: i.name || i.reference || i, lib: 'selfhst' });
+      }
+    } catch {} finally {
+      if (results.length === 0) {
+        const fallback = [
+          'pi-hole','home-assistant','proxmox','gitea','forgejo','portainer',
+          'nextcloud','nginx-proxy-manager','grafana','influxdb','node-red',
+          'jellyfin','plex','sonarr','radarr','prowlarr','uptime-kuma',
+          'vaultwarden','bitwarden','adguard-home','wireguard','traefik',
+          'code-server','gitlab','docker','kubernetes','ubuntu','debian',
+          'arch-linux','fedora','truenas','unraid','opnsense','pfsense',
+          'syncthing','paperless-ngx','mealie','immich','frigate','obsidian',
+          'calibre','audiobookshelf','kavita','readarr','lidarr','bazarr',
+          'tautulli','overseerr','requestrr','heimdall','dashy','homarr',
+          'cockpit','netdata','prometheus','alertmanager','loki','zabbix',
+          'minio','redis','postgresql','mysql','mariadb','mongodb','rabbitmq',
+          'mosquitto','zigbee2mqtt','esphome','node-red','influxdb','telegraf',
+          'pterodactyl','changedetection','changedetection-io','n8n','actual',
+          'gotify','ntfy','vikunja','linkding','shiori','authelia','authentik',
+          'keycloak','glances','scrutiny','phpmyadmin','pgadmin','filebrowser',
+          'heimdall','dashy','homarr','homer','flame','snippet-box','libreddit',
+          'tt-rss','miniflux','invidious','nitter','searx','searxng','whoogle',
+          'trilium','outline','bookstack','wikijs','docmost','stitcher',
+          'changedetection','changedetection-io','actual-budget','kestra',
+          'n8n','n8n-io','doplarr','petio','autobrr','cross-se','qdirstat',
+          'wizarr','recyclarr','notifiarr','scrutiny','changedetection',
+          'plane','beszel','beszel-agent','gladys','homebridge','hue','deconz','zwavejs-ui','zigbee2mqtt',
+          'esphome','openhab','homeassistant','adguard','pihole','blocky',
+          'unbound','powerdns','mailcow','mailpile','roundcube','snappy',
+          'rainloop','sogo','poste'
+        ].filter((v, i, a) => a.indexOf(v) === i); // dedupe
+        for (const f of fallback) results.push({ reference: f, name: f, lib: 'selfhst' });
+      }
+    }
+    try {
+      const r = await fetch('https://cdn.jsdelivr.net/npm/simple-icons/_data/simple-icons.json');
+      const data = await r.json();
+      const icons = data.icons || data;
+      const entries = Array.isArray(icons) ? icons : Object.values(icons);
+      for (const entry of entries.slice(0, 400)) {
+        const title = entry.title || entry;
+        const slug = (entry.slug || title)
+          .toLowerCase()
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+          .replace(/\./g, 'dot')
+          .replace(/&/g, 'and')
+          .replace(/\+/g, 'plus')
+          .replace(/@/g, 'at')
+          .replace(/[^a-z0-9]/g, '');
+        results.push({ reference: 'simple:' + slug, name: title, lib: 'simple' });
+      }
+    } catch {}
+    allIcons = results;
+    renderIcons(allIcons);
+  }
+
+  function renderIcons(icons) {
+    const grid = document.getElementById('icon-grid');
+    grid.innerHTML = '';
+    const slice = icons.slice(0, 300);
+    for (const icon of slice) {
+      const ref = icon.reference;
+      const name = icon.name || ref;
+      const div = document.createElement('div');
+      div.className = 'icon-option' + (selectedIcon === ref ? ' selected' : '');
+      div.title = name + (icon.lib === 'simple' ? ' (Simple Icons)' : '');
+      div.onclick = () => selectIcon(ref, div);
+      div.innerHTML = `
+        <img src="${getIconUrl(ref)}" 
+             onerror="this.parentElement.style.display='none'" alt="${name}">
+        <span>${name}</span>
+      `;
+      grid.appendChild(div);
+    }
+    if (icons.length === 0) {
+      grid.innerHTML = '<div id="icon-loading">Aucun résultat</div>';
+    }
+  }
+
+  function selectIcon(ref, el) {
+    selectedIcon = ref;
+    document.querySelectorAll('.icon-option').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  function filterIcons(query) {
+    const q = query.toLowerCase().trim();
+    if (!q) { renderIcons(allIcons); return; }
+    const filtered = allIcons.filter(i => {
+      const ref = i.reference || i;
+      const name = i.name || ref;
+      return ref.includes(q) || name.toLowerCase().includes(q);
+    });
+    renderIcons(filtered);
+  }
+
+  // ─── ADD/EDIT SERVICE ───
+  async function addService() {
+    const name = document.getElementById('svc-name').value.trim();
+    const url = document.getElementById('svc-url').value.trim();
+    if (!name || !url) {
+      document.getElementById('svc-name').style.borderColor = !name ? 'var(--red)' : '';
+      document.getElementById('svc-url').style.borderColor = !url ? 'var(--red)' : '';
+      return;
+    }
+    if (editingId) {
+      await fetch(`/api/services/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url, icon: selectedIcon })
+      });
+    } else {
+      await fetch('/api/services', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url, icon: selectedIcon })
+      });
+    }
+    closeModal();
+    await fetchServices();
+    if (!editingId) await fetch('/api/ping-now');
+    await fetchPingHistory();
+    render();
+  }
+
+  init();
+</script>
+</body>
+</html>

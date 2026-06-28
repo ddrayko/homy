@@ -1,0 +1,11 @@
+services:
+  homy:
+    build: .
+    container_name: homy
+    ports:
+      - "3000:3000"
+    environment:
+      - DATA_DIR=/app/data
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
