@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -420,10 +420,10 @@
     <circle id="dot-core" cx="18" cy="18" r="8" fill="#4cff72"/>
   </svg>
   <div id="status-text-wrap">
-    <div id="status-label">Opérationnel</div>
-    <div id="status-desc">Tous les services sont en ligne</div>
+    <div id="status-label">Operational</div>
+    <div id="status-desc">All services are online</div>
   </div>
-  <button id="edit-btn" onclick="toggleEdit()" title="Réorganiser">
+  <button id="edit-btn" onclick="toggleEdit()" title="Reorder">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
       <path d="m15 5 4 4"/>
@@ -435,8 +435,8 @@
 <div id="main">
   <div id="empty-state">
     <h1>Select Your Services</h1>
-    <p>Monitore tes services self-hosted en temps réel.</p>
-    <div class="hint">Clique sur "+ Add a service" ci-dessous pour commencer</div>
+    <p>Monitor your self-hosted services in real time.</p>
+    <div class="hint">Click "+ Add a service" below to get started</div>
   </div>
   <div id="services-container">
     <div id="services-grid"></div>
@@ -450,27 +450,27 @@
 <div id="modal-overlay">
   <div id="modal">
     <div id="modal-header">
-      <span id="modal-title">Ajouter un service</span>
+      <span id="modal-title">Add a service</span>
       <button id="modal-close" onclick="closeModal()">×</button>
     </div>
     <div id="modal-body">
       <div class="field">
-        <label>Nom</label>
-        <input type="text" id="svc-name" placeholder="ex: Pi-hole">
+          <label>Name</label>
+          <input type="text" id="svc-name" placeholder="e.g. Pi-hole">
       </div>
       <div class="field">
-        <label>URL</label>
-        <input type="text" id="svc-url" placeholder="ex: http://192.168.1.1">
+          <label>URL</label>
+          <input type="text" id="svc-url" placeholder="e.g. http://192.168.1.1">
       </div>
       <div class="field">
-        <label>Icône</label>
-        <input type="text" id="icon-search" placeholder="Rechercher une icône..." oninput="filterIcons(this.value)">
-        <div id="icon-grid"><div id="icon-loading">Chargement des icônes...</div></div>
+          <label>Icon</label>
+          <input type="text" id="icon-search" placeholder="Search icons..." oninput="filterIcons(this.value)">
+          <div id="icon-grid"><div id="icon-loading">Loading icons...</div></div>
       </div>
     </div>
     <div id="modal-footer">
-      <button class="btn" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" id="modal-submit" onclick="addService()">Ajouter</button>
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="modal-submit" onclick="addService()">Add</button>
     </div>
   </div>
 </div>
@@ -529,22 +529,22 @@
 
     if (downCount === 0) {
       banner.className = 'all-up';
-      label.textContent = 'Opérationnel';
-      desc.textContent = total === 0 ? 'Aucun service configuré' : `${total} service${total > 1 ? 's' : ''} en ligne`;
+      label.textContent = 'Operational';
+      desc.textContent = total === 0 ? 'No services configured' : `${total} service${total > 1 ? 's' : ''} online`;
       dotGlow.setAttribute('fill', '#4cff7222');
       dotGlow.setAttribute('stroke', '#4cff72');
       dotCore.setAttribute('fill', '#4cff72');
     } else if (downCount <= 3) {
       banner.className = 'some-down';
-      label.textContent = 'Dégradé';
-      desc.textContent = `${downCount} service${downCount > 1 ? 's' : ''} hors ligne sur ${total}`;
+      label.textContent = 'Degraded';
+      desc.textContent = `${downCount} service${downCount > 1 ? 's' : ''} offline out of ${total}`;
       dotGlow.setAttribute('fill', '#ffcc0022');
       dotGlow.setAttribute('stroke', '#ffcc00');
       dotCore.setAttribute('fill', '#ffcc00');
     } else {
       banner.className = 'many-down';
-      label.textContent = 'Incident majeur';
-      desc.textContent = `${downCount} services hors ligne sur ${total}`;
+      label.textContent = 'Major incident';
+      desc.textContent = `${downCount} services offline out of ${total}`;
       dotGlow.setAttribute('fill', '#ff3a3a22');
       dotGlow.setAttribute('stroke', '#ff3a3a');
       dotCore.setAttribute('fill', '#ff3a3a');
@@ -578,7 +578,7 @@
         } else {
           const entry = hist[dataIdx];
           if (!entry.ok) {
-            bars.push('<div class="ping-bar down" style="height:100%" title="Hors ligne"></div>');
+            bars.push('<div class="ping-bar down" style="height:100%" title="Offline"></div>');
           } else {
             const ms = entry.ms || 0;
             const ratio = (ms - minMs) / range;
@@ -686,8 +686,8 @@
   // ─── MODAL ───
   function openModal(svc) {
     editingId = svc ? svc.id : null;
-    document.getElementById('modal-title').textContent = svc ? 'Modifier le service' : 'Ajouter un service';
-    document.getElementById('modal-submit').textContent = svc ? 'Enregistrer' : 'Ajouter';
+    document.getElementById('modal-title').textContent = svc ? 'Edit service' : 'Add a service';
+    document.getElementById('modal-submit').textContent = svc ? 'Save' : 'Add';
     document.getElementById('svc-name').value = svc ? svc.name : '';
     document.getElementById('svc-url').value = svc ? svc.url : '';
     document.getElementById('icon-search').value = '';
@@ -721,7 +721,7 @@
 
   async function loadIcons() {
     if (allIcons.length > 0) { renderIcons(allIcons); return; }
-    document.getElementById('icon-grid').innerHTML = '<div id="icon-loading">Chargement...</div>';
+    document.getElementById('icon-grid').innerHTML = '<div id="icon-loading">Loading...</div>';
     const results = [];
     try {
       const r = await fetch('https://cdn.jsdelivr.net/gh/selfhst/icons@main/metadata/icons.json');
@@ -802,7 +802,7 @@
       grid.appendChild(div);
     }
     if (icons.length === 0) {
-      grid.innerHTML = '<div id="icon-loading">Aucun résultat</div>';
+      grid.innerHTML = '<div id="icon-loading">No results</div>';
     }
   }
 
