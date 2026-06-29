@@ -68,4 +68,4 @@ node server.js
 
 MIT
 
-![Logo](https://img.drayko.xyz/assets/DRYAKO.png)
+![Logo](https://img.drayko.xyz/assets/DRAYKO.png)
