@@ -19,7 +19,11 @@ Self-hosted status board. Monitor your services in real time with a clean, minim
 ## Quick start
 
 ```bash
-docker run -d -p 3000:3000 ghcr.io/ddrayko/homy
+docker run -d \
+  -p 3000:3000 \
+  -e DATA_DIR=/app/data \
+  -v ./data:/app/data \
+  ghcr.io/ddrayko/homy
 ```
 
 Open http://localhost:3000.
@@ -33,6 +37,8 @@ services:
     container_name: homy
     ports:
       - "3000:3000"
+    environment:
+      - DATA_DIR=/app/data
     volumes:
       - ./data:/app/data
     restart: unless-stopped
@@ -41,6 +47,8 @@ services:
 ```bash
 docker compose up -d
 ```
+
+> **Note:** `DATA_DIR` must be set to `/app/data` so data files are written inside the mounted volume. Without it, services and ping history are stored inside the container and lost on recreate.
 
 ## Build from source
 
