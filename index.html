@@ -708,15 +708,8 @@
   // ─── ICONS ───
   function getIconUrl(ref) {
     if (!ref) return '';
-    if (ref.startsWith('simple:')) {
-      const slug = ref.slice(7);
-      return `https://cdn.jsdelivr.net/npm/simple-icons/icons/${slug}.svg`;
-    }
-    if (ref.startsWith('selfhst:')) {
-      const slug = ref.slice(8);
-      return `https://raw.githubusercontent.com/selfhst/icons/main/svg/${slug}.svg`;
-    }
-    return `https://raw.githubusercontent.com/selfhst/icons/main/svg/${ref}.svg`;
+    const slug = ref.startsWith('simple:') ? ref.slice(7) : ref;
+    return `https://cdn.jsdelivr.net/npm/simple-icons/icons/${slug}.svg`;
   }
 
   async function loadIcons() {
@@ -724,49 +717,11 @@
     document.getElementById('icon-grid').innerHTML = '<div id="icon-loading">Loading...</div>';
     const results = [];
     try {
-      const r = await fetch('https://cdn.jsdelivr.net/gh/selfhst/icons@main/metadata/icons.json');
-      const data = await r.json();
-      for (const i of data) {
-        results.push({ reference: i.reference || i, name: i.name || i.reference || i, lib: 'selfhst' });
-      }
-    } catch {} finally {
-      if (results.length === 0) {
-        const fallback = [
-          'pi-hole','home-assistant','proxmox','gitea','forgejo','portainer',
-          'nextcloud','nginx-proxy-manager','grafana','influxdb','node-red',
-          'jellyfin','plex','sonarr','radarr','prowlarr','uptime-kuma',
-          'vaultwarden','bitwarden','adguard-home','wireguard','traefik',
-          'code-server','gitlab','docker','kubernetes','ubuntu','debian',
-          'arch-linux','fedora','truenas','unraid','opnsense','pfsense',
-          'syncthing','paperless-ngx','mealie','immich','frigate','obsidian','excalidraw',
-          'calibre','audiobookshelf','kavita','readarr','lidarr','bazarr',
-          'tautulli','overseerr','requestrr','heimdall','dashy','homarr',
-          'cockpit','netdata','prometheus','alertmanager','loki','zabbix',
-          'minio','redis','postgresql','mysql','mariadb','mongodb','rabbitmq',
-          'mosquitto','zigbee2mqtt','esphome','node-red','influxdb','telegraf',
-          'pterodactyl','changedetection','changedetection-io','n8n','actual',
-          'gotify','ntfy','vikunja','linkding','shiori','authelia','authentik',
-          'keycloak','glances','scrutiny','phpmyadmin','pgadmin','filebrowser',
-          'heimdall','dashy','homarr','homer','flame','snippet-box','libreddit',
-          'tt-rss','miniflux','invidious','nitter','searx','searxng','whoogle',
-          'trilium','outline','bookstack','wikijs','docmost','stitcher',
-          'changedetection','changedetection-io','actual-budget','kestra',
-          'n8n','n8n-io','doplarr','petio','autobrr','cross-se','qdirstat',
-          'wizarr','recyclarr','notifiarr','scrutiny','changedetection',
-          'plane','beszel','beszel-agent','gladys','homebridge','hue','deconz','zwavejs-ui','zigbee2mqtt',
-          'esphome','openhab','homeassistant','adguard','pihole','blocky',
-          'unbound','powerdns','mailcow','mailpile','roundcube','snappy',
-          'rainloop','sogo','poste'
-        ].filter((v, i, a) => a.indexOf(v) === i); // dedupe
-        for (const f of fallback) results.push({ reference: f, name: f, lib: 'selfhst' });
-      }
-    }
-    try {
       const r = await fetch('https://cdn.jsdelivr.net/npm/simple-icons/_data/simple-icons.json');
       const data = await r.json();
       const icons = data.icons || data;
       const entries = Array.isArray(icons) ? icons : Object.values(icons);
-      for (const entry of entries.slice(0, 400)) {
+      for (const entry of entries) {
         const title = entry.title || entry;
         const slug = (entry.slug || title)
           .toLowerCase()
@@ -776,7 +731,7 @@
           .replace(/\+/g, 'plus')
           .replace(/@/g, 'at')
           .replace(/[^a-z0-9]/g, '');
-        results.push({ reference: 'simple:' + slug, name: title, lib: 'simple' });
+        results.push({ reference: 'simple:' + slug, name: title });
       }
     } catch {}
     allIcons = results;
@@ -786,13 +741,12 @@
   function renderIcons(icons) {
     const grid = document.getElementById('icon-grid');
     grid.innerHTML = '';
-    const slice = icons.slice(0, 300);
-    for (const icon of slice) {
+    for (const icon of icons) {
       const ref = icon.reference;
       const name = icon.name || ref;
       const div = document.createElement('div');
       div.className = 'icon-option' + (selectedIcon === ref ? ' selected' : '');
-      div.title = name + (icon.lib === 'simple' ? ' (Simple Icons)' : '');
+      div.title = name;
       div.onclick = () => selectIcon(ref, div);
       div.innerHTML = `
         <img src="${getIconUrl(ref)}" 

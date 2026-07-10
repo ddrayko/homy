@@ -13,7 +13,7 @@ Self-hosted status board. Monitor your services in real time with a clean, minim
 - Visual ping bars showing latency
 - Status banner: operational / degraded / major incident
 - Drag-and-drop reordering
-- Icon picker (Simple Icons + selfhst/icons)
+- Icon picker (Simple Icons)
 - Mobile-friendly
 
 ## Quick start
