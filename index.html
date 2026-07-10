@@ -87,13 +87,27 @@
     color: var(--text-muted);
     cursor: pointer;
     padding: 6px;
-    margin-left: auto;
     border-radius: 4px;
     transition: color 0.15s, background 0.15s;
     line-height: 0;
   }
   #edit-btn:hover { color: var(--text); background: var(--border); }
   #edit-btn.active { color: var(--text); background: var(--border); }
+
+  #search-input {
+    background: #000;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 10px;
+    font-family: var(--font);
+    font-size: 11px;
+    outline: none;
+    width: 160px;
+    transition: border-color 0.15s, width 0.2s;
+    margin-left: auto;
+  }
+  #search-input:focus { border-color: var(--text-dim); width: 220px; }
+  #search-input::placeholder { color: var(--text-muted); }
 
   /* ─── MAIN ─── */
   #main {
@@ -423,6 +437,7 @@
     <div id="status-label">Operational</div>
     <div id="status-desc">All services are online</div>
   </div>
+  <input type="text" id="search-input" placeholder="Search services..." oninput="filterServices(this.value)">
   <button id="edit-btn" onclick="toggleEdit()" title="Reorder">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
@@ -484,6 +499,7 @@
   let dragSrcId = null;
   let editingId = null;
   let didDrag = false;
+  let searchQuery = '';
 
   // ─── INIT ───
   async function init() {
@@ -506,13 +522,23 @@
     pingHistory = await r.json();
   }
 
+  // ─── SEARCH ───
+  function filterServices(query) {
+    searchQuery = query.toLowerCase().trim();
+    render();
+  }
+
   // ─── RENDER ───
   function render() {
     const grid = document.getElementById('services-grid');
     grid.innerHTML = '';
 
+    const filtered = searchQuery
+      ? services.filter(s => s.name.toLowerCase().includes(searchQuery) || s.url.toLowerCase().includes(searchQuery))
+      : services;
+
     let downCount = 0;
-    for (const svc of services) {
+    for (const svc of filtered) {
       const hist = pingHistory[svc.id] || [];
       const lastEntry = hist[hist.length - 1];
       if (lastEntry && !lastEntry.ok) downCount++;
@@ -525,7 +551,7 @@
     const dotGlow = document.getElementById('dot-glow');
     const dotCore = document.getElementById('dot-core');
 
-    const total = services.length;
+    const total = filtered.length;
 
     if (downCount === 0) {
       banner.className = 'all-up';
@@ -550,7 +576,7 @@
       dotCore.setAttribute('fill', '#ff3a3a');
     }
 
-    for (const svc of services) {
+    for (const svc of filtered) {
       const hist = pingHistory[svc.id] || [];
       const item = document.createElement('div');
       item.className = 'service-item';
@@ -614,6 +640,7 @@
     const hasServices = services.length > 0;
     document.getElementById('empty-state').style.display = hasServices ? 'none' : 'block';
     document.getElementById('services-container').style.display = hasServices ? 'flex' : 'none';
+    document.getElementById('search-input').style.display = hasServices ? '' : 'none';
   }
 
   // ─── REORDER (drag & drop) ───
