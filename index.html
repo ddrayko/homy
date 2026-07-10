@@ -104,10 +104,16 @@
     outline: none;
     width: 160px;
     transition: border-color 0.15s, width 0.2s;
-    margin-left: auto;
   }
   #search-input:focus { border-color: var(--text-dim); width: 220px; }
   #search-input::placeholder { color: var(--text-muted); }
+
+  #header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
 
   /* ─── MAIN ─── */
   #main {
@@ -437,13 +443,15 @@
     <div id="status-label">Operational</div>
     <div id="status-desc">All services are online</div>
   </div>
-  <input type="text" id="search-input" placeholder="Search services..." oninput="filterServices(this.value)">
-  <button id="edit-btn" onclick="toggleEdit()" title="Reorder">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-      <path d="m15 5 4 4"/>
-    </svg>
-  </button>
+  <div id="header-actions">
+    <input type="text" id="search-input" placeholder="Search services..." oninput="filterServices(this.value)">
+    <button id="edit-btn" onclick="toggleEdit()" title="Reorder">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+        <path d="m15 5 4 4"/>
+      </svg>
+    </button>
+  </div>
 </div>
 
 <!-- MAIN -->
