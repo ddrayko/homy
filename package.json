@@ -1,6 +1,6 @@
 {
   "name": "statusboard",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "Self-hosted status board",
   "main": "server.js",
   "scripts": {
