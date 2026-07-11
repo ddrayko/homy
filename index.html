@@ -697,7 +697,7 @@
         <div class="service-top">
           ${iconUrl ? `<img class="service-icon" src="${iconUrl}" alt="">` : '<div style="width:20px"></div>'}
           <span class="service-name" title="${svc.url}">${svc.name}</span>
-          <button class="service-delete" onclick="event.stopPropagation(); openConfirmDelete('${svc.id}')">×</button>
+          ${isEditing ? `<button class="service-delete" onclick="event.stopPropagation(); openConfirmDelete('${svc.id}')">×</button>` : ''}
         </div>
         <div class="ping-bars">${bars.join('')}</div>
       `;
