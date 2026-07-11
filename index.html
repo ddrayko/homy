@@ -429,6 +429,65 @@
     border-color: var(--text-dim);
   }
   .btn-primary:hover { border-color: var(--text); }
+
+  /* ─── CONFIRM DELETE MODAL ─── */
+  #confirm-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  #confirm-overlay.open { display: flex; }
+
+  #confirm-modal {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    width: 360px;
+    max-width: 95vw;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #confirm-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  #confirm-modal-body {
+    padding: 20px;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  #confirm-modal-body .confirm-service-name {
+    color: var(--red);
+  }
+
+  #confirm-modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .btn-danger {
+    border-color: var(--red);
+    color: var(--red);
+  }
+  .btn-danger:hover {
+    border-color: var(--red);
+    background: var(--red);
+    color: var(--bg);
+  }
 </style>
 </head>
 <body>
@@ -494,6 +553,18 @@
     <div id="modal-footer">
       <button class="btn" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" id="modal-submit" onclick="addService()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div id="confirm-overlay">
+  <div id="confirm-modal">
+    <div id="confirm-modal-header">Delete service</div>
+    <div id="confirm-modal-body"></div>
+    <div id="confirm-modal-footer">
+      <button class="btn" onclick="closeConfirmDelete()">Cancel</button>
+      <button class="btn btn-danger" id="confirm-delete-btn" onclick="confirmDelete()">Delete</button>
     </div>
   </div>
 </div>
@@ -626,7 +697,7 @@
         <div class="service-top">
           ${iconUrl ? `<img class="service-icon" src="${iconUrl}" alt="">` : '<div style="width:20px"></div>'}
           <span class="service-name" title="${svc.url}">${svc.name}</span>
-          <button class="service-delete" onclick="event.stopPropagation(); deleteService('${svc.id}')">×</button>
+          <button class="service-delete" onclick="event.stopPropagation(); openConfirmDelete('${svc.id}')">×</button>
         </div>
         <div class="ping-bars">${bars.join('')}</div>
       `;
@@ -710,12 +781,34 @@
   }
 
   // ─── DELETE ───
-  async function deleteService(id) {
+  let pendingDeleteId = null;
+
+  function openConfirmDelete(id) {
+    pendingDeleteId = id;
+    const svc = services.find(s => s.id === id);
+    document.getElementById('confirm-modal-body').innerHTML =
+      `Are you sure you want to delete <span class="confirm-service-name">${svc ? svc.name : ''}</span> ?`;
+    document.getElementById('confirm-overlay').classList.add('open');
+  }
+
+  function closeConfirmDelete() {
+    document.getElementById('confirm-overlay').classList.remove('open');
+    pendingDeleteId = null;
+  }
+
+  async function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    closeConfirmDelete();
     await fetch(`/api/services/${id}`, { method: 'DELETE' });
     await fetchServices();
     await fetchPingHistory();
     render();
   }
+
+  document.getElementById('confirm-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('confirm-overlay')) closeConfirmDelete();
+  });
 
   // ─── MODAL ───
   function openModal(svc) {
