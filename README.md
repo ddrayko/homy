@@ -59,6 +59,28 @@ docker build -t homy .
 docker run -d -p 3000:3000 homy
 ```
 
+## Update
+
+**Docker Compose:**
+
+```bash
+docker compose pull && docker compose up -d --force-recreate
+```
+
+**Docker Run:**
+
+```bash
+docker pull ghcr.io/ddrayko/homy
+docker stop homy && docker rm homy
+docker run -d \
+  -p 3000:3000 \
+  -e DATA_DIR=/app/data \
+  -v ./data:/app/data \
+  --restart unless-stopped \
+  --name homy \
+  ghcr.io/ddrayko/homy
+```
+
 ## Development
 
 ```bash
