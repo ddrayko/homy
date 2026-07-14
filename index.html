@@ -698,7 +698,7 @@
 
       item.innerHTML = `
         <div class="service-top">
-          ${iconUrl ? `<img class="service-icon" src="${iconUrl}" alt="">` : '<div style="width:20px"></div>'}
+          ${iconUrl ? `<img class="service-icon" src="${iconUrl}" alt="">` : ''}
           <span class="service-name" title="${svc.url}">${svc.name}</span>
           ${isEditing ? `<button class="service-delete" onclick="event.stopPropagation(); openConfirmDelete('${svc.id}')">×</button>` : ''}
         </div>
