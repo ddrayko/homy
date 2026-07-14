@@ -2,7 +2,7 @@
 
 Self-hosted status board. Monitor your services in real time with a clean, minimal UI.
 
-![Screen](https://img.drayko.xyz/assets/homy.png)
+![Screen](https://img.drayko.xyz/homy.png)
 
 ![Status banner](https://img.shields.io/badge/status-up-brightgreen)
 
