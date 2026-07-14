@@ -100,4 +100,4 @@ MIT
 
 ---
 
-![Logo](https://img.drayko.xyz/assets/DRAYKO-gh.png)
+![Logo](https://img.drayko.xyz/DRAYKO-gh.png)
