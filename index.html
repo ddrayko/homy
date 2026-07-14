@@ -47,7 +47,7 @@
     height: 36px;
   }
 
-  #status-dot circle {
+  #status-dot circle, #status-dot path {
     transition: fill 0.4s ease, stroke 0.4s ease;
   }
 
@@ -496,7 +496,7 @@
 <div id="status-banner" class="all-up">
   <svg id="status-dot" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg">
     <circle id="dot-glow" cx="18" cy="18" r="16" fill="#4cff7222" stroke="#4cff72" stroke-width="1.5"/>
-    <circle id="dot-core" cx="18" cy="18" r="8" fill="#4cff72"/>
+    <path id="dot-mark" fill="none" stroke="#4cff72" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" d="M11 18.5 L16 23.5 L25 13"/>
   </svg>
   <div id="status-text-wrap">
     <div id="status-label">Operational</div>
@@ -628,31 +628,34 @@
     const label = document.getElementById('status-label');
     const desc = document.getElementById('status-desc');
     const dotGlow = document.getElementById('dot-glow');
-    const dotCore = document.getElementById('dot-core');
+    const dotMark = document.getElementById('dot-mark');
 
     const total = filtered.length;
+
+    const setMark = (color, fill, glow, d) => {
+      dotGlow.setAttribute('fill', fill);
+      dotGlow.setAttribute('stroke', color);
+      dotMark.setAttribute('stroke', color);
+      dotMark.setAttribute('d', d);
+    };
+    const CHECK = 'M11 18.5 L16 23.5 L25 13';
+    const CROSS = 'M12 12 L24 24 M24 12 L12 24';
 
     if (downCount === 0) {
       banner.className = 'all-up';
       label.textContent = 'Operational';
       desc.textContent = total === 0 ? 'No services configured' : `${total} service${total > 1 ? 's' : ''} online`;
-      dotGlow.setAttribute('fill', '#4cff7222');
-      dotGlow.setAttribute('stroke', '#4cff72');
-      dotCore.setAttribute('fill', '#4cff72');
+      setMark('#4cff72', '#4cff7222', '#4cff72', CHECK);
     } else if (downCount <= 3) {
       banner.className = 'some-down';
       label.textContent = 'Degraded';
       desc.textContent = `${downCount} service${downCount > 1 ? 's' : ''} offline out of ${total}`;
-      dotGlow.setAttribute('fill', '#ffcc0022');
-      dotGlow.setAttribute('stroke', '#ffcc00');
-      dotCore.setAttribute('fill', '#ffcc00');
+      setMark('#ffcc00', '#ffcc0022', '#ffcc00', CROSS);
     } else {
       banner.className = 'many-down';
       label.textContent = 'Major incident';
       desc.textContent = `${downCount} services offline out of ${total}`;
-      dotGlow.setAttribute('fill', '#ff3a3a22');
-      dotGlow.setAttribute('stroke', '#ff3a3a');
-      dotCore.setAttribute('fill', '#ff3a3a');
+      setMark('#ff3a3a', '#ff3a3a22', '#ff3a3a', CROSS);
     }
 
     for (const svc of filtered) {
