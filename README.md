@@ -100,4 +100,6 @@ MIT
 
 ---
 
-![Logo](https://img.drayko.xyz/DRAYKO-gh.png)
+## Star History
+
+[![Star History Chart](https://api.star-history.com/chart?repos=ddrayko/homy&type=date&legend=top-left&sealed_token=q40w3_bUAhdyb71n9ngKayQyLyiq8aQcpPM410WaCBloV2H3u1MK0LUpyTjxMZ1fLk4BJMEH_mMaFV1queen88zQsfmuZ8n52T6LNfZZ_a8K4DeOdpxqEppG3jVtJ1Y-QCTp_uThPBNpHTbnxiUI_gzF8CKOiAU3y9ltL1GkDWelehRCzDWvXmF3KdRZ)](https://www.star-history.com/?repos=ddrayko%2Fhomy&type=date&legend=top-left)
