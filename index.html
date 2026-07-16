@@ -585,6 +585,7 @@
     await fetchServices();
     await fetchPingHistory();
     render();
+    document.getElementById('search-input').focus();
     setInterval(async () => {
       await fetchPingHistory();
       render();
