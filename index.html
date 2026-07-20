@@ -250,6 +250,17 @@
   .ping-bar.down { background: var(--red); opacity: 0.85; }
   .ping-bar.empty { background: var(--border-bright); height: 40%; }
 
+  .service-stats {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    display: flex;
+    gap: 10px;
+    line-height: 1;
+  }
+  .service-stats .up { color: var(--green); }
+  .service-stats .down { color: var(--red); }
+
   /* ─── ADD BUTTON ─── */
   #add-btn-wrap {
     padding: 16px 20px 0;
@@ -707,6 +718,11 @@
         }
       }
 
+      const totalPings = hist.length;
+      const okPings = hist.filter(e => e.ok).length;
+      const uptime = totalPings > 0 ? Math.round((okPings / totalPings) * 100) : 100;
+      const avgMs = okPings > 0 ? Math.round(hist.filter(e => e.ok).reduce((s, e) => s + e.ms, 0) / okPings) : null;
+
       item.innerHTML = `
         <div class="service-top">
           ${iconUrl ? `<img class="service-icon" src="${iconUrl}" alt="">` : ''}
@@ -714,6 +730,10 @@
           ${isEditing ? `<button class="service-delete" onclick="event.stopPropagation(); openConfirmDelete('${svc.id}')">×</button>` : ''}
         </div>
         <div class="ping-bars">${bars.join('')}</div>
+        <div class="service-stats">
+          <span class="${uptime === 100 ? 'up' : 'down'}">${uptime}%</span>
+          ${avgMs !== null ? `<span>${avgMs}ms avg</span>` : ''}
+        </div>
       `;
       if (isEditing) {
         item.draggable = true;
