@@ -201,10 +201,7 @@
   }
   .service-group-header + .service-item,
   .service-group-header + .service-item.hidden-by-group { display: flex; }
-  .service-group-header.collapsed + .service-item,
-  .service-group-header.collapsed ~ .service-item { display: none; }
-  .service-group-header + .service-item.hidden-by-group { display: none; }
-  .service-group-header:not(.collapsed) + .service-item { display: flex; }
+  .service-item.hidden { display: none !important; }
 
   .service-item {
     border: 1px solid var(--border);
@@ -823,6 +820,7 @@
         header.innerHTML = `<span class="collapse-icon">▼</span>${groupName}`;
         header.onclick = () => {
           header.classList.toggle('collapsed');
+          document.querySelectorAll(`[data-group="${groupName}"]`).forEach(el => el.classList.toggle('hidden'));
         };
         grid.appendChild(header);
       }
@@ -831,6 +829,7 @@
         const hist = pingHistory[svc.id] || [];
         const item = document.createElement('div');
         item.className = 'service-item';
+        if (groupName) item.setAttribute('data-group', groupName);
         if (!isEditing) {
           item.onclick = (e) => { if (!e.target.closest('.service-delete')) window.open(svc.url, '_blank'); };
         } else {
