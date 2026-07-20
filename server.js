@@ -9,6 +9,7 @@ const PORT = 3000;
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 const DATA_FILE = path.join(DATA_DIR, 'services.json');
 const HISTORY_FILE = path.join(DATA_DIR, 'ping-history.json');
+const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
 
 app.use(express.json());
 
@@ -36,6 +37,41 @@ function savePingHistory(history) {
 
 let pingHistory = loadPingHistory();
 
+// Config
+function loadConfig() {
+  if (!fs.existsSync(CONFIG_FILE)) return { webhookUrl: '', webhookCooldown: 5 };
+  try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
+  catch { return { webhookUrl: '', webhookCooldown: 5 }; }
+}
+
+function saveConfig(config) {
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
+}
+
+// Webhook
+const lastNotified = {};
+
+function sendWebhook(payload) {
+  const config = loadConfig();
+  if (!config.webhookUrl) return;
+  const body = JSON.stringify(payload);
+  try {
+    const url = new URL(config.webhookUrl);
+    const mod = url.protocol === 'https:' ? https : http;
+    const options = {
+      hostname: url.hostname,
+      port: url.port || (url.protocol === 'https:' ? 443 : 80),
+      path: url.pathname + url.search,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+      timeout: 5000
+    };
+    const req = mod.request(options);
+    req.write(body);
+    req.end();
+  } catch {}
+}
+
 function pingUrl(url) {
   return new Promise((resolve) => {
     try {
@@ -53,16 +89,45 @@ function pingUrl(url) {
   });
 }
 
+let previousState = {};
+
 async function pingAll() {
   const services = loadServices();
+  const config = loadConfig();
+  const now = Date.now();
+
   for (const svc of services) {
     const result = await pingUrl(svc.url);
     if (!pingHistory[svc.id]) pingHistory[svc.id] = [];
-    pingHistory[svc.id].push({ time: Date.now(), ok: result.ok, ms: result.ms });
-    // Keep last 10 min = 10 entries (1/min)
+    pingHistory[svc.id].push({ time: now, ok: result.ok, ms: result.ms });
     if (pingHistory[svc.id].length > 10) pingHistory[svc.id].shift();
+
+    if (config.webhookUrl) {
+      const prevOk = previousState[svc.id];
+      if (prevOk !== undefined && prevOk !== result.ok) {
+        const lastSent = lastNotified[svc.id] || 0;
+        const cooldown = (config.webhookCooldown || 5) * 60 * 1000;
+        if (now - lastSent >= cooldown) {
+          lastNotified[svc.id] = now;
+          sendWebhook({
+            embeds: [{
+              title: result.ok ? 'Service Back Online' : 'Service Down',
+              description: `${svc.name} is now ${result.ok ? 'online' : 'offline'}`,
+              color: result.ok ? 5047138 : 16711680,
+              fields: [
+                { name: 'Service', value: svc.name, inline: true },
+                { name: 'URL', value: svc.url, inline: true },
+                { name: 'Status', value: result.ok ? 'Online' : 'Offline', inline: true },
+                ...(result.ok ? [{ name: 'Latency', value: `${result.ms}ms`, inline: true }] : [])
+              ],
+              timestamp: new Date().toISOString()
+            }]
+          });
+        }
+      }
+      previousState[svc.id] = result.ok;
+    }
   }
-  savePingHistory(pingHistory);
 }
 
 // Ping every minute
@@ -116,6 +181,20 @@ app.delete('/api/services/:id', (req, res) => {
   delete pingHistory[req.params.id];
   savePingHistory(pingHistory);
   res.json({ ok: true });
+});
+
+app.get('/api/config', (req, res) => {
+  const config = loadConfig();
+  res.json(config);
+});
+
+app.put('/api/config', (req, res) => {
+  const { webhookUrl, webhookCooldown } = req.body;
+  const config = loadConfig();
+  config.webhookUrl = typeof webhookUrl === 'string' ? webhookUrl : config.webhookUrl;
+  config.webhookCooldown = typeof webhookCooldown === 'number' ? webhookCooldown : config.webhookCooldown;
+  saveConfig(config);
+  res.json(config);
 });
 
 app.get('/api/ping-history', (req, res) => {

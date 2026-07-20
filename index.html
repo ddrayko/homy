@@ -81,7 +81,7 @@
   #status-banner.some-down #status-label { color: var(--yellow); }
   #status-banner.many-down #status-label { color: var(--red); }
 
-  #edit-btn {
+  .header-btn {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -91,8 +91,8 @@
     transition: color 0.15s, background 0.15s;
     line-height: 0;
   }
-  #edit-btn:hover { color: var(--text); background: var(--border); }
-  #edit-btn.active { color: var(--text); background: var(--border); }
+  .header-btn:hover { color: var(--text); background: var(--border); }
+  .header-btn.active { color: var(--text); background: var(--border); }
 
   #search-input {
     background: #0a0a0a;
@@ -529,6 +529,59 @@
     background: var(--red);
     color: var(--bg);
   }
+
+  #settings-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 0;
+    margin-left: 4px;
+  }
+  #settings-indicator.on { background: var(--green); }
+  #settings-indicator.off { background: var(--text-muted); }
+
+  #settings-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 150;
+    align-items: center;
+    justify-content: center;
+  }
+  #settings-overlay.open { display: flex; }
+
+  #settings-modal {
+    background: var(--surface);
+    border: 1px solid var(--border-bright);
+    width: 420px;
+    max-width: 95vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #settings-modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  #settings-modal-body { padding: 20px; overflow-y: auto; }
+
+  #settings-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
 </style>
 </head>
 <body>
@@ -545,10 +598,16 @@
   </div>
   <div id="header-actions">
     <input type="text" id="search-input" placeholder="Search services..." oninput="filterServices(this.value)" onkeydown="handleSearchKeydown(event)">
-    <button id="edit-btn" onclick="toggleEdit()" title="Reorder">
+    <button id="edit-btn" class="header-btn" onclick="toggleEdit()" title="Reorder">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
         <path d="m15 5 4 4"/>
+      </svg>
+    </button>
+    <button id="settings-btn" class="header-btn" onclick="openSettings()" title="Settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
       </svg>
     </button>
   </div>
@@ -614,6 +673,33 @@
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div id="settings-overlay">
+  <div id="settings-modal">
+    <div id="settings-modal-header">
+      <span>Settings</span>
+      <button class="header-btn" onclick="closeSettings()">×</button>
+    </div>
+    <div id="settings-modal-body">
+      <div class="field">
+        <label>Webhook URL <span id="settings-indicator" class="off"></span></label>
+        <input type="text" id="webhook-url" placeholder="e.g. https://discord.com/api/webhooks/...">
+        <div style="font-size:9px;color:var(--text-muted);margin-top:4px;line-height:1.5">
+          Posts to Discord, Slack, or any webhook when a service goes down/comes back up.
+        </div>
+      </div>
+      <div class="field">
+        <label>Notification cooldown (minutes)</label>
+        <input type="number" id="webhook-cooldown" placeholder="5" min="1" value="5" style="width:80px">
+      </div>
+    </div>
+    <div id="settings-modal-footer">
+      <button class="btn" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
 <script>
   let services = [];
   let pingHistory = {};
@@ -629,6 +715,7 @@
   async function init() {
     await fetchServices();
     await fetchPingHistory();
+    loadSettings();
     render();
     document.getElementById('search-input').focus();
     setInterval(async () => {
@@ -996,6 +1083,52 @@
       return ref.includes(q) || name.toLowerCase().includes(q);
     });
     renderIcons(filtered);
+  }
+
+  // ─── SETTINGS ───
+  async function loadSettings() {
+    try {
+      const r = await fetch('/api/config');
+      const config = await r.json();
+      const indicator = document.getElementById('settings-indicator');
+      if (config.webhookUrl) {
+        indicator.className = 'on';
+        indicator.title = 'Webhook configured';
+      } else {
+        indicator.className = 'off';
+        indicator.title = 'No webhook configured';
+      }
+    } catch {}
+  }
+
+  async function openSettings() {
+    try {
+      const r = await fetch('/api/config');
+      const config = await r.json();
+      document.getElementById('webhook-url').value = config.webhookUrl || '';
+      document.getElementById('webhook-cooldown').value = config.webhookCooldown || 5;
+      document.getElementById('settings-overlay').classList.add('open');
+    } catch {}
+  }
+
+  function closeSettings() {
+    document.getElementById('settings-overlay').classList.remove('open');
+  }
+
+  document.getElementById('settings-overlay').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('settings-overlay')) closeSettings();
+  });
+
+  async function saveSettings() {
+    const webhookUrl = document.getElementById('webhook-url').value.trim();
+    const webhookCooldown = parseInt(document.getElementById('webhook-cooldown').value, 10) || 5;
+    await fetch('/api/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ webhookUrl, webhookCooldown })
+    });
+    closeSettings();
+    loadSettings();
   }
 
   // ─── ADD/EDIT SERVICE ───
