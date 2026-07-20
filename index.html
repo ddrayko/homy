@@ -176,33 +176,6 @@
     width: 100%;
   }
 
-  .service-group-header {
-    grid-column: 1 / -1;
-    font-size: 10px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    padding: 12px 4px 4px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    user-select: none;
-    transition: color 0.15s;
-  }
-  .service-group-header:hover { color: var(--text); }
-  .service-group-header .collapse-icon {
-    font-size: 10px;
-    transition: transform 0.15s;
-    display: inline-block;
-  }
-  .service-group-header.collapsed .collapse-icon {
-    transform: rotate(-90deg);
-  }
-  .service-group-header + .service-item,
-  .service-group-header + .service-item.hidden-by-group { display: flex; }
-  .service-item.hidden { display: none !important; }
-
   .service-item {
     border: 1px solid var(--border);
     padding: 16px;
@@ -644,10 +617,6 @@
           <input type="text" id="svc-url" placeholder="e.g. http://192.168.1.1">
       </div>
       <div class="field">
-          <label>Group</label>
-          <input type="text" id="svc-group" placeholder="e.g. Network, Storage, Media...">
-      </div>
-      <div class="field">
           <label>Icon</label>
           <input type="text" id="icon-search" placeholder="Search icons..." oninput="filterIcons(this.value)">
           <div id="icon-grid"><div id="icon-loading">Loading icons...</div></div>
@@ -800,36 +769,10 @@
       setMark('#ff3a3a', '#ff3a3a22', '#ff3a3a', CROSS);
     }
 
-    const groups = {};
     for (const svc of filtered) {
-      const g = svc.group || '';
-      if (!groups[g]) groups[g] = [];
-      groups[g].push(svc);
-    }
-    const groupKeys = Object.keys(groups).sort((a, b) => {
-      if (!a) return 1;
-      if (!b) return -1;
-      return a.localeCompare(b);
-    });
-
-    for (const groupName of groupKeys) {
-      const groupServices = groups[groupName];
-      if (groupName && !isEditing) {
-        const header = document.createElement('div');
-        header.className = 'service-group-header';
-        header.innerHTML = `<span class="collapse-icon">▼</span>${groupName}`;
-        header.onclick = () => {
-          header.classList.toggle('collapsed');
-          document.querySelectorAll(`[data-group="${groupName}"]`).forEach(el => el.classList.toggle('hidden'));
-        };
-        grid.appendChild(header);
-      }
-
-      for (const svc of groupServices) {
         const hist = pingHistory[svc.id] || [];
         const item = document.createElement('div');
         item.className = 'service-item';
-        if (groupName) item.setAttribute('data-group', groupName);
         if (!isEditing) {
           item.onclick = (e) => { if (!e.target.closest('.service-delete')) window.open(svc.url, '_blank'); };
         } else {
@@ -894,7 +837,6 @@
         }
         grid.appendChild(item);
       }
-    }
 
     // Show/hide empty state and container
     const hasServices = services.length > 0;
@@ -998,7 +940,6 @@
     document.getElementById('modal-submit').textContent = svc ? 'Save' : 'Add';
     document.getElementById('svc-name').value = svc ? svc.name : '';
     document.getElementById('svc-url').value = svc ? svc.url : '';
-    document.getElementById('svc-group').value = svc ? (svc.group || '') : '';
     document.getElementById('icon-search').value = '';
     selectedIcon = svc ? svc.icon : '';
     document.getElementById('modal-overlay').classList.add('open');
@@ -1136,7 +1077,6 @@
   async function addService() {
     const name = document.getElementById('svc-name').value.trim();
     const url = document.getElementById('svc-url').value.trim();
-    const group = document.getElementById('svc-group').value.trim();
     if (!name || !url) {
       document.getElementById('svc-name').style.borderColor = !name ? 'var(--red)' : '';
       document.getElementById('svc-url').style.borderColor = !url ? 'var(--red)' : '';
@@ -1146,13 +1086,13 @@
       await fetch(`/api/services/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, url, icon: selectedIcon, group })
+        body: JSON.stringify({ name, url, icon: selectedIcon })
       });
     } else {
       await fetch('/api/services', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, url, icon: selectedIcon, group })
+        body: JSON.stringify({ name, url, icon: selectedIcon })
       });
     }
     closeModal();

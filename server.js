@@ -141,15 +141,15 @@ app.get('/api/services', (req, res) => {
 });
 
 app.post('/api/services', (req, res) => {
-  const { name, url, icon, group } = req.body;
+  const { name, url, icon } = req.body;
   if (!name || !url) return res.status(400).json({ error: 'name and url required' });
   const services = loadServices();
   const id = Date.now().toString();
-  services.push({ id, name, url, icon: icon || '', group: group || '' });
+  services.push({ id, name, url, icon: icon || '' });
   saveServices(services);
   pingHistory[id] = [];
   savePingHistory(pingHistory);
-  res.json({ id, name, url, icon, group: group || '' });
+  res.json({ id, name, url, icon });
 });
 
 app.put('/api/services/reorder', (req, res) => {
@@ -164,12 +164,12 @@ app.put('/api/services/reorder', (req, res) => {
 });
 
 app.put('/api/services/:id', (req, res) => {
-  const { name, url, icon, group } = req.body;
+  const { name, url, icon } = req.body;
   if (!name || !url) return res.status(400).json({ error: 'name and url required' });
   const services = loadServices();
   const idx = services.findIndex(s => s.id === req.params.id);
   if (idx === -1) return res.status(404).json({ error: 'not found' });
-  services[idx] = { ...services[idx], name, url, icon: icon || '', group: group || '' };
+  services[idx] = { ...services[idx], name, url, icon: icon || '' };
   saveServices(services);
   res.json(services[idx]);
 });
