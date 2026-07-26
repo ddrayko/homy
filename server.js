@@ -77,7 +77,7 @@ function pingUrl(url) {
     try {
       const start = Date.now();
       const mod = url.startsWith('https') ? https : http;
-      const options = { timeout: 5000, rejectUnauthorized: false };
+      const options = { timeout: 5000, rejectUnauthorized: true };
       const req = mod.get(url, options, (res) => {
         const ms = Date.now() - start;
         resolve({ ok: true, ms });
